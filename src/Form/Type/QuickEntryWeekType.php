@@ -12,19 +12,34 @@ namespace App\Form\Type;
 use App\Entity\User;
 use App\Model\QuickEntryModel;
 use App\Validator\Constraints\QuickEntryTimesheet;
+use App\Entity\Activity;
+use App\Repository\ActivityRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use DateTime;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\Valid;
+use Psr\Log\LoggerInterface;
+
 
 final class QuickEntryWeekType extends AbstractType
 {
+    public function __construct(
+        private ActivityRepository $activityRepository,
+        private EntityManagerInterface $entityManager,
+        private LoggerInterface $logger
+        )
+    {
+    }
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $projectOptions = [
@@ -57,40 +72,61 @@ final class QuickEntryWeekType extends AbstractType
         $activityOptions = [
             'label' => false,
             'required' => false,
-            'placeholder' => '',
-            'query_builder_for_user' => true,
         ];
 
-        $builder->add('activity', ActivityType::class, $activityOptions);
+        $builder->add('activity', TextType::class, $activityOptions);
+        $builder->add('activity_id', TextType::class, $activityOptions);
+        // $builder->add('activity', EntityType::class, [
+        //     // looks for choices from this entity
+        //     'class' => Activity::class,
+        //     'label' => false,
+        //     'required' => false,
+        
+        //     // uses the User.username property as the visible option string
+        //     'choice_label' => 'name',
+        
+        //     // used to render a select box, check boxes or radios
+        //     // 'multiple' => true,
+        //     // 'expanded' => true,
+        // ]);
+        // $builder->add('activity', ActivityForm::class, $activityOptions);
+        // $builder
+        //     ->add('activity', TextType::class, [
+        //         'label' => false,
+        //         'attr' => [
+        //             'autofocus' => 'autofocus'
+        //         ],
+        //     ]);
 
-        $activityFunction = function (FormEvent $event) use ($activityOptions) {
-            /** @var QuickEntryModel|null $data */
-            $data = $event->getData();
-            if ($data === null || $data->getActivity() === null) {
-                return;
-            }
+        // $activityFunction = function (FormEvent $event) use ($activityOptions) {
+        //     /** @var QuickEntryModel|null $data */
+        //     $data = $event->getData();
+            
+        //     if ($data === null || $data->getActivity() === null) {
+        //         return;
+        //     }
 
-            $activityOptions['activities'] = [$data->getActivity()];
-            $activityOptions['projects'] = [$data->getProject()];
+        //     $activityOptions['activity_id'] = $data->getActivityId();
+        //     $activityOptions['project_id'] = $data->getProject()->getId();
 
-            $event->getForm()->add('activity', ActivityType::class, $activityOptions);
-        };
-        $builder->addEventListener(FormEvents::PRE_SET_DATA, $activityFunction);
+        //     $event->getForm()->add('activity', ActivityType::class, $activityOptions);
+        // };
+        // $builder->addEventListener(FormEvents::PRE_SET_DATA, $activityFunction);
 
-        $activityPreSubmitFunction = function (FormEvent $event) use ($activityOptions) {
-            $data = $event->getData();
+        // $activityPreSubmitFunction = function (FormEvent $event) use ($activityOptions) {
+        //     $data = $event->getData();
+        //     dd($data);
+        //     if (isset($data['project']) && !empty($data['project'])) {
+        //         $activityOptions['project_id'] = [$data->getProject()->getId()];
+        //     }
 
-            if (isset($data['project']) && !empty($data['project'])) {
-                $activityOptions['projects'] = [$data['project']];
-            }
+        //     if (isset($data['activity']) && !empty($data['activity'])) {
+        //         $activityOptions['activities'] = [$data['activity']];
+        //     }
 
-            if (isset($data['activity']) && !empty($data['activity'])) {
-                $activityOptions['activities'] = [$data['activity']];
-            }
-
-            $event->getForm()->add('activity', ActivityType::class, $activityOptions);
-        };
-        $builder->addEventListener(FormEvents::PRE_SUBMIT, $activityPreSubmitFunction);
+        //     $event->getForm()->add('activity', ActivityType::class, $activityOptions);
+        // };
+        // $builder->addEventListener(FormEvents::PRE_SUBMIT, $activityPreSubmitFunction);
 
         $builder->add('timesheets', CollectionType::class, [
             'entry_type' => QuickEntryTimesheetType::class,
@@ -105,7 +141,7 @@ final class QuickEntryWeekType extends AbstractType
             'allow_add' => true,
             'constraints' => [
                 // having "new Valid()," here will trigger constraint violations on activity and project for completely empty rows
-                new All(['constraints' => [new QuickEntryTimesheet()]])
+                // new All(['constraints' => [new QuickEntryTimesheet()]])
             ],
         ]);
 
@@ -121,9 +157,14 @@ final class QuickEntryWeekType extends AbstractType
                 if ($transformValue === null || $transformValue->isPrototype()) {
                     return $transformValue;
                 }
+                
+                
 
                 $project = $transformValue->getProject();
                 $activity = $transformValue->getActivity();
+                $activityId =  $transformValue->getActivityId();
+                $activityVal =$this->activityRepository->find(intval($activityId));
+                // $activity =$transformValue->setActivity( $activityVal->getName());
 
                 // this case needs to be handled by the validator
                 if ($project === null || $activity === null) {
@@ -137,15 +178,39 @@ final class QuickEntryWeekType extends AbstractType
                 foreach ($transformValue->getTimesheets() as $timesheet) {
                     $timesheet->setUser($user);
                     $timesheet->setProject($project);
-                    $timesheet->setActivity($activity);
+                    $timesheet->setActivity($activityVal);
                 }
-
+                
                 return $transformValue;
             },
             function ($reverseTransformValue) {
                 return $reverseTransformValue;
             }
         ));
+
+        // $builder->addEventListener(
+        //     FormEvents::PRE_SUBMIT,
+        //     function (FormEvent $event) {
+        //         /** @var QuickEntryModel $data */
+        //         $data = $event->getData();
+        //         // dd($data);
+        //         /** @var Project $project */
+        //         $project = $data['project'];
+        //         $activities = $data['activity'];
+
+        //         $activity = new Activity();
+        //         $activity->setProject($project);
+        //         $activity->setName($activities==null?'':$activities);
+        //         try {
+        //             if(null !== $activity){
+        //                 $this->activityRepository->saveActivity($activity);
+        //             }
+        //         } catch (\Exception $e) {
+        //             $event->getForm()->addError(new FormError($e->getMessage()));
+        //         }
+                
+        //     }
+        // );
 
         // make sure that duration is mapped back to end field
         $builder->addEventListener(
@@ -154,11 +219,12 @@ final class QuickEntryWeekType extends AbstractType
                 /** @var QuickEntryModel $data */
                 $data = $event->getData();
                 $newRecords = $data->getNewTimesheet();
-
                 $user = $data->getUser();
                 $project = $data->getProject();
+                $activity_id =  $data->getActivityId();
                 $activity = $data->getActivity();
-
+                $activityVal =$this->activityRepository->find(intval($activity_id));
+                $activity = $data->getActivity();
                 foreach ($newRecords as $record) {
                     if ($user !== null) {
                         $record->setUser($user);
@@ -166,8 +232,11 @@ final class QuickEntryWeekType extends AbstractType
                     if ($project !== null) {
                         $record->setProject($project);
                     }
-                    if ($activity !== null) {
-                        $record->setActivity($activity);
+                    // if ($activity !== null) {
+                    //     $record->setActivities($activity);
+                    // }
+                    if($activityVal !==null){
+                        $record->setActivity($activityVal);
                     }
                 }
             }

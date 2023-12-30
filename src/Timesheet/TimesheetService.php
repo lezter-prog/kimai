@@ -12,6 +12,7 @@ namespace App\Timesheet;
 use App\Configuration\SystemConfiguration;
 use App\Entity\Timesheet;
 use App\Entity\User;
+use App\Entity\Activity;
 use App\Event\TimesheetCreatePostEvent;
 use App\Event\TimesheetCreatePreEvent;
 use App\Event\TimesheetDeleteMultiplePreEvent;
@@ -25,6 +26,7 @@ use App\Event\TimesheetUpdateMultiplePostEvent;
 use App\Event\TimesheetUpdateMultiplePreEvent;
 use App\Event\TimesheetUpdatePostEvent;
 use App\Event\TimesheetUpdatePreEvent;
+use App\Model\TimesheetNewModel;
 use App\Repository\TimesheetRepository;
 use App\Security\AccessDeniedException;
 use App\Timesheet\TrackingMode\TrackingModeInterface;
@@ -326,5 +328,38 @@ final class TimesheetService
         }
 
         return $counter;
+    }
+
+    public function mapToModel(Timesheet $timesheet):TimesheetNewModel
+    {
+        $timesheetNewModel = new TimesheetNewModel();
+        $timesheetNewModel->setUser($timesheet->getUser());
+        $timesheetNewModel->setBillableMode($timesheet->getBillableMode());
+
+        return $timesheetNewModel;
+
+    }
+    public function ModelToEntity(TimesheetNewModel $timesheet):Timesheet
+    {
+        $timesheetNewModel = new Timesheet();
+        // $timesheetNewModel->setDate($timesheet->getDate());
+        $timesheetNewModel->setTimeZone($timesheet->getTimezone());
+        $timesheetNewModel->setBegin($timesheet->getBegin());
+        $timesheetNewModel->setEnd($timesheet->getEnd());
+        $timesheetNewModel->setDuration($timesheet->getDuration());
+        $timesheetNewModel->setUser($timesheet->getUser());
+        $activity =  new Activity();
+        $activity->setName($timesheet->getActivity());
+        $activity->setProject($timesheet->getProject());
+        $timesheetNewModel->setActivity($activity);
+        $timesheetNewModel->setProject($timesheet->getProject());
+        $timesheetNewModel->setDescription($timesheet->getDescription());
+        foreach ($timesheet->getTags() as $tag) {
+            $timesheetNewModel->addTag($tag);
+        }
+        $timesheetNewModel->setBillableMode($timesheet->getBillableMode());
+
+        return $timesheetNewModel;
+
     }
 }

@@ -25,7 +25,7 @@ class QuickEntryModel
      */
     private array $timesheets = [];
 
-    public function __construct(private ?User $user = null, private ?Project $project = null, private ?Activity $activity = null)
+    public function __construct(private ?User $user = null, private ?Project $project = null, private ?string $activity =null,private ?string $activity_id=null)
     {
     }
 
@@ -53,13 +53,22 @@ class QuickEntryModel
     {
         $this->project = $project;
     }
+    public function getActivityId(): ?string
+    {
+        return $this->activity_id;
+    }
 
-    public function getActivity(): ?Activity
+    public function setActivityId(?string $activity_id): void
+    {
+        $this->activity_id = $activity_id;
+    }
+
+    public function getActivity(): ?string
     {
         return $this->activity;
     }
 
-    public function setActivity(?Activity $activity): void
+    public function setActivity(?string $activity): void
     {
         $this->activity = $activity;
     }

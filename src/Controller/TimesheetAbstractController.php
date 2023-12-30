@@ -12,17 +12,21 @@ namespace App\Controller;
 use App\Configuration\SystemConfiguration;
 use App\Entity\MetaTableTypeInterface;
 use App\Entity\Timesheet;
+use App\Entity\Activity;
 use App\Event\TimesheetDuplicatePostEvent;
 use App\Event\TimesheetDuplicatePreEvent;
 use App\Event\TimesheetMetaDefinitionEvent;
 use App\Event\TimesheetMetaDisplayEvent;
+use App\Model\TimesheetNewModel;
 use App\Export\ServiceExport;
 use App\Form\MultiUpdate\MultiUpdateTable;
 use App\Form\MultiUpdate\MultiUpdateTableDTO;
 use App\Form\MultiUpdate\TimesheetMultiUpdate;
 use App\Form\MultiUpdate\TimesheetMultiUpdateDTO;
 use App\Form\TimesheetEditForm;
+use App\Form\TimesheetNewForm;
 use App\Form\TimesheetPreCreateForm;
+use App\Repository\ActivityRepository;
 use App\Form\Toolbar\TimesheetExportToolbarForm;
 use App\Form\Toolbar\TimesheetToolbarForm;
 use App\Repository\Query\BaseQuery;
@@ -46,7 +50,8 @@ abstract class TimesheetAbstractController extends AbstractController
         protected EventDispatcherInterface $dispatcher,
         protected TimesheetService $service,
         protected SystemConfiguration $configuration,
-        protected TagRepository $tagRepository
+        protected TagRepository $tagRepository,
+        protected ActivityRepository $actitivityRepository
     ) {
     }
 
@@ -112,7 +117,6 @@ abstract class TimesheetAbstractController extends AbstractController
 
         $page = $this->createPageSetup();
         $page->setActionName($this->getActionName());
-
         return $this->render('timesheet/index.html.twig', [
             'view_rate' => $canSeeRate,
             'page_setup' => $page,
@@ -170,18 +174,54 @@ abstract class TimesheetAbstractController extends AbstractController
     protected function create(Request $request): Response
     {
         $entry = $this->service->createNewTimesheet($this->getUser(), $request);
-
         $preForm = $this->createFormForGetRequest(TimesheetPreCreateForm::class, $entry, [
             'include_user' => $this->includeUserInForms('create'),
         ]);
         $preForm->submit($request->query->all(), false);
-
-        $createForm = $this->getCreateForm($entry);
+        // $createForm = $this->getCreateForm($entry);
+        // dd();
+        // $req = $request->request->all();
+        // if($req !==null){
+        //     $form = $req['timesheet_new_form'];
+            
+        //     $newActivity = new Activity();
+        //     $newActivity->setName($form['activity']);
+        //     $entry->setActivity($newActivity);
+        //     $form['activity']=$newActivity;
+        //     $req['timesheet_new_form']=$form;
+        // }
+        $newEntry = $this->service->mapToModel($entry);
+        
+        
+        $createForm = $this->createForm(TimesheetNewForm::class,$newEntry, [
+            // 'include_rate' => $this->isGranted('edit_rate', $entry),
+            // 'include_exported' => $this->isGranted('edit_export', $entry),
+            // 'include_billable' => $this->isGranted('edit_billable', $entry),
+            'include_user' => $this->includeUserInForms('create'),
+            'create_activity' => $this->isGranted('create_activity'),
+            // 'allow_begin_datetime' => $mode->canEditBegin(),
+            // 'allow_end_datetime' => $mode->canEditEnd(),
+            // 'allow_duration' => $mode->canEditDuration(),
+            'duration_minutes' => $this->configuration->getTimesheetIncrementDuration(),
+            'timezone' => $this->getDateTimeFactory()->getTimezone()->getName(),
+            'customer' => true,
+        ]);
+        // dd($createForm->getData());
         $createForm->handleRequest($request);
+        
 
         if ($createForm->isSubmitted() && $createForm->isValid()) {
+            
+            $timesheet =$this->service->ModelToEntity($createForm->getData());
+           
+            
             try {
-                $this->service->saveNewTimesheet($entry);
+                if( $timesheet->getActivity() != null){
+                    $activity = $timesheet->getActivity();
+                    $this->actitivityRepository->saveActivity($activity);
+                    $timesheet->setActivity($activity);
+                }
+                $this->service->saveNewTimesheet($timesheet);
                 $this->flashSuccess('action.update.success');
 
                 return $this->redirectToRoute($this->getTimesheetRoute());
