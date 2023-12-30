@@ -72,7 +72,7 @@ final class ProjectType extends AbstractType
             },
             'query_builder_for_user' => true,
             'activity_enabled' => true,
-            // 'activity_select' => 'activity',
+            'activity_select' => 'activity',
             // 'activity_visibility' => ActivityQuery::SHOW_VISIBLE,
             'ignore_date' => false,
             'join_customer' => false,
