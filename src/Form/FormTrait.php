@@ -20,6 +20,7 @@ use App\Repository\Query\ProjectFormTypeQuery;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 /**
  * Helper functions to manage dependent customer-project-activity fields.
@@ -105,10 +106,15 @@ trait FormTrait
 
     protected function addActivity(FormBuilderInterface $builder, ?Activity $activity = null, ?Project $project = null, array $options = []): void
     {
-        $options = array_merge(['placeholder' => '', 'query_builder_for_user' => true], $options);
+        $options = array_merge([ 'query_builder_for_user' => true], $options);
 
-        $options['projects'] = $project;
-        $options['activities'] = $activity;
+        $options['project_id'] = $project==null?$project:$project->getId();
+        $options['activity_id'] = $activity;
+        // $activityOptions = [
+        //     'label' => 'Activity',
+        //     'required' => false,
+        //     'projects'=>$project
+        // ];
 
         $builder->add('activity', ActivityType::class, $options);
 
@@ -123,7 +129,7 @@ trait FormTrait
                     return;
                 }
 
-                $options['projects'] = $data['project'];
+                $options['project_id'] = $data['project'];
 
                 $event->getForm()->add('activity', ActivityType::class, $options);
             }

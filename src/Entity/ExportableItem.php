@@ -42,7 +42,7 @@ interface ExportableItem
      */
     public function getAmount(): float;
 
-    public function getActivity(): ?Activity;
+    public function getActivity(): ?string;
 
     public function getProject(): ?Project;
 

@@ -16,6 +16,10 @@ use App\Model\QuickEntryWeek;
 use App\Repository\Query\TimesheetQuery;
 use App\Repository\TimesheetRepository;
 use App\Timesheet\TimesheetService;
+use App\Activity\ActivityService;
+use App\Entity\Activity;
+use App\Form\API\ActivityApiEditForm;
+use App\Event\ActivityMetaDefinitionEvent;
 use App\Utils\PageSetup;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,13 +33,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('quick-entry')]
 final class QuickEntryController extends AbstractController
 {
-    public function __construct(private SystemConfiguration $configuration, private TimesheetService $timesheetService, private TimesheetRepository $repository)
+    public function __construct(private SystemConfiguration $configuration,private ActivityService $activityService, private TimesheetService $timesheetService, private TimesheetRepository $repository)
     {
     }
 
     #[Route(path: '/{begin}', name: 'quick_entry', methods: ['GET', 'POST'])]
     public function quickEntry(Request $request, ?string $begin = null): Response
     {
+       
         $factory = $this->getDateTimeFactory();
 
         if ($begin !== null) {
@@ -69,24 +74,28 @@ final class QuickEntryController extends AbstractController
         $query->setUser($user);
 
         $result = $this->repository->getTimesheetResult($query);
+        
 
         $rows = [];
         /** @var Timesheet $timesheet */
         foreach ($result->getResults(true) as $timesheet) {
+            
             $i = 0;
             $id = $timesheet->getProject()->getId() . '_' . $timesheet->getActivity()->getId();
             $day = $timesheet->getBegin()->format('Y-m-d');
+            // $activity->setProject($timesheet->getProject());
 
             while (\array_key_exists($id, $rows) && \array_key_exists('entry', $rows[$id]['days'][$day])) {
                 $i++;
-                $id = $timesheet->getProject()->getId() . '_' . $timesheet->getActivity()->getId() . '_' . $i;
+                $id = $timesheet->getProject()->getId() ;
             }
-
+            
             if (!\array_key_exists($id, $rows)) {
                 $rows[$id] = [
                     'days' => $week,
                     'project' => $timesheet->getProject(),
-                    'activity' => $timesheet->getActivity()
+                    'activity' => $timesheet->getActivity(),
+                    'activity_id'=>$timesheet->getActivity()->getId()
                 ];
             }
 
@@ -114,10 +123,12 @@ final class QuickEntryController extends AbstractController
             if ($timesheet->getProject() !== null && (!$timesheet->getProject()->isVisibleAtDate($startWeek) && !$timesheet->getProject()->isVisibleAtDate($endWeek))) {
                 continue;
             }
+            
             $rows[$id] = [
                 'days' => $week,
                 'project' => $timesheet->getProject(),
-                'activity' => $timesheet->getActivity()
+                'activity' => $timesheet->getActivity(),
+                'activity_id'=>$timesheet->getActivity()->getId()
             ];
         }
 
@@ -129,7 +140,9 @@ final class QuickEntryController extends AbstractController
         $formModel = new QuickEntryWeek($startWeek);
 
         foreach ($rows as $id => $row) {
-            $model = $formModel->addRow($user, $row['project'], $row['activity']);
+            
+            $model = $formModel->addRow($user, $row['project'],$row['activity']->getName(),$row['activity_id']);
+           
             foreach ($row['days'] as $dayId => $day) {
                 if (!\array_key_exists('entry', $day)) {
                     // fill all rows and columns to make sure we do not have missing records
@@ -145,6 +158,7 @@ final class QuickEntryController extends AbstractController
                 }
             }
         }
+        
 
         // create prototype model
         $empty = $formModel->createRow($user);
@@ -179,7 +193,9 @@ final class QuickEntryController extends AbstractController
             'start_date' => $startWeek,
             'end_date' => $endWeek,
         ]);
-
+        
+        // dd($form->getData());
+       
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -188,18 +204,41 @@ final class QuickEntryController extends AbstractController
 
             $saveTimesheets = [];
             $deleteTimesheets = [];
+            $saveActivities = [];
 
             foreach ($data->getRows() as $tmpModel) {
+                
                 foreach ($tmpModel->getTimesheets() as $timesheet) {
+
                     if ($timesheet->getId() !== null) {
                         $duration = $timesheet->getDuration(false);
                         if ($duration === null || $timesheet->getEnd() === null) {
                             $deleteTimesheets[] = $timesheet;
                         } else {
+                            if($timesheet->getActivity() != null){
+                                $activity = $timesheet->getActivity();
+                                if($activity->getName() != $tmpModel->getActivity()){
+                                    $activity->setName($tmpModel->getActivity());
+                                    $this->activityService->updateActivity($activity);
+                                }
+                            }else{
+                                $activity = new Activity();
+                                $activity->setProject($tmpModel->getProject());
+                                $activity->setName($tmpModel->getActivity());
+                                $this->activityService->saveNewActivity($activity);
+                                $timesheet->setActivity($activity);
+                            }
+                            
+
                             $saveTimesheets[] = $timesheet;
                         }
                     } else {
                         if ($timesheet->getDuration() !== null) {
+                            $activity = new Activity();
+                            $activity->setProject($tmpModel->getProject());
+                            $activity->setName($tmpModel->getActivity());
+                            $this->activityService->saveNewActivity($activity);
+                            $timesheet->setActivity($activity);
                             $saveTimesheets[] = $timesheet;
                         }
                     }
@@ -214,6 +253,7 @@ final class QuickEntryController extends AbstractController
                 }
 
                 if (\count($saveTimesheets) > 0) {
+                    // $this->activityService->updateMultipleActivities($saveActivities);
                     $this->timesheetService->updateMultipleTimesheets($saveTimesheets);
                     $saved = true;
                 }

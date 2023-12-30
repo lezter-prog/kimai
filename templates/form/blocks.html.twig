@@ -39,6 +39,9 @@
         <td>
             {{ form_row(form.activity) }}
         </td>
+        <td style='display:none'>
+            {{ form_row(form.activity_id) }}
+        </td>
         {% for timesheet in form.timesheets %}
             <td class="text-center{% if timesheet.vars.data.begin is weekend %} weekend{% endif %}{% if timesheet.vars.data.begin is today %} today{% endif %}">
                 {{ form_widget(timesheet) }}

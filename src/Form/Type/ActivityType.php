@@ -14,6 +14,8 @@ use App\Form\Helper\ActivityHelper;
 use App\Form\Helper\ProjectHelper;
 use App\Repository\ActivityRepository;
 use App\Repository\Query\ActivityFormTypeQuery;
+use Doctrine\ORM\EntityRepository;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormInterface;
@@ -53,7 +55,11 @@ final class ActivityType extends AbstractType
     public function getChoiceAttributes(Activity $activity, $key, $value): array
     {
         if (null !== ($project = $activity->getProject())) {
-            return ['data-project' => $project->getId(), 'data-currency' => $project->getCustomer()?->getCurrency()];
+            return [
+                'data-project' => $project->getId(), 
+                'data-currency' => $project->getCustomer()?->getCurrency(),
+                'data-id' => $activity->getId()
+        ];
         }
 
         return [];
@@ -69,14 +75,15 @@ final class ActivityType extends AbstractType
             ],
             'label' => 'activity',
             'class' => Activity::class,
-            'choice_label' => [$this, 'getChoiceLabel'],
+            'choice_label' => 'name',
             'choice_attr' => [$this, 'getChoiceAttributes'],
-            'group_by' => [$this, 'groupBy'],
+            // 'choice_label' => [$this, 'getChoiceLabel'],
+            // 'choice_attr' => [$this, 'getChoiceAttributes'],
+            // 'group_by' => [$this, 'groupBy'],
             'query_builder_for_user' => true,
-            // @var Project|Project[]|int|int[]|null
-            'projects' => null,
-            // @var Activity|Activity[]|int|int[]|null
-            'activities' => null,
+            'project_id' => null,
+            'activity_id' => null,
+            'activity_name' => null,
             // @var Activity|null
             'ignore_activity' => null,
             'allow_create' => false,
@@ -91,18 +98,27 @@ final class ActivityType extends AbstractType
         });
 
         $resolver->setDefault('query_builder', function (Options $options) {
-            return function (ActivityRepository $repo) use ($options) {
-                $query = new ActivityFormTypeQuery($options['activities'], $options['projects']);
+            
+            return function (EntityRepository $er) use ($options) {
+                $qb = $er->createQueryBuilder('a')
+                ->where('a.id = ?1')
+                ->andWhere('a.project = ?2')
+                ->setParameter(1, $options['activity_id'])
+                ->setParameter(2, $options['project_id']);
 
-                if (true === $options['query_builder_for_user']) {
-                    $query->setUser($options['user']);
-                }
+               return $qb;
+                // $query = new ActivityFormTypeQuery($options['activities'], $options['projects']);
 
-                if (null !== $options['ignore_activity']) {
-                    $query->setActivityToIgnore($options['ignore_activity']);
-                }
+                // if (true === $options['query_builder_for_user']) {
+                //     $query->setUser($options['user']);
+                // }
 
-                return $repo->getQueryBuilderForFormType($query);
+                // if (null !== $options['ignore_activity']) {
+                //     $query->setActivityToIgnore($options['ignore_activity']);
+                // }
+                // $activity =  ($options['activities'] == null ? [] : $options['activities']);
+
+                // return $repo->findOneBy($activity);
             };
         });
     }
@@ -116,6 +132,6 @@ final class ActivityType extends AbstractType
 
     public function getParent(): string
     {
-        return EntityType::class;
+        return TextType::class;
     }
 }
