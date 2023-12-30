@@ -71,9 +71,9 @@ final class ProjectType extends AbstractType
                 return $this->customerHelper->getChoiceLabel($project->getCustomer());
             },
             'query_builder_for_user' => true,
-            'activity_enabled' => false,
-            'activity_select' => 'activity',
-            'activity_visibility' => ActivityQuery::SHOW_VISIBLE,
+            'activity_enabled' => true,
+            // 'activity_select' => 'activity',
+            // 'activity_visibility' => ActivityQuery::SHOW_VISIBLE,
             'ignore_date' => false,
             'join_customer' => false,
             // @var Project|null
@@ -118,20 +118,20 @@ final class ProjectType extends AbstractType
             };
         });
 
-        $resolver->setDefault('api_data', function (Options $options) {
-            if (false !== $options['activity_enabled']) {
-                $name = \is_string($options['activity_enabled']) ? $options['activity_enabled'] : 'project';
+        // $resolver->setDefault('api_data', function (Options $options) {
+        //     if (false !== $options['activity_enabled']) {
+        //         $name = \is_string($options['activity_enabled']) ? $options['activity_enabled'] : 'project';
 
-                return [
-                    'select' => $options['activity_select'],
-                    'route' => 'get_activities',
-                    'route_params' => [$name => '%' . $name . '%', 'visible' => $options['activity_visibility']],
-                    'empty_route_params' => ['globals' => 'true', 'visible' => $options['activity_visibility']],
-                ];
-            }
+        //         return [
+        //             'select' => $options['activity_select'],
+        //             'route' => 'get_activities',
+        //             'route_params' => [$name => '%' . $name . '%', 'visible' => $options['activity_visibility']],
+        //             'empty_route_params' => ['globals' => 'true', 'visible' => $options['activity_visibility']],
+        //         ];
+        //     }
 
-            return [];
-        });
+        //     return [];
+        // });
     }
 
     public function buildView(FormView $view, FormInterface $form, array $options): void

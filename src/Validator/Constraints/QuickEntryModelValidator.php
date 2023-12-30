@@ -34,12 +34,6 @@ final class QuickEntryModelValidator extends ConstraintValidator
         }
 
         if ($model->hasExistingTimesheet() || $model->hasNewTimesheet()) {
-            if ($model->getActivity() === null) {
-                $this->context->buildViolation($constraint->messageActivityRequired)
-                    ->atPath('activity')
-                    ->setCode(QuickEntryModelConstraint::ACTIVITY_REQUIRED)
-                    ->addViolation();
-            }
 
             if ($model->getProject() === null) {
                 $this->context->buildViolation($constraint->messageProjectRequired)

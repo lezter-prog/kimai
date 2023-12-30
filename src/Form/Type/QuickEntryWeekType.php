@@ -74,7 +74,7 @@ final class QuickEntryWeekType extends AbstractType
             'required' => false,
         ];
 
-        $builder->add('activity', TextType::class, $activityOptions);
+        $builder->add('activity', ActivityType::class, $activityOptions);
         $builder->add('activity_id', TextType::class, $activityOptions);
         // $builder->add('activity', EntityType::class, [
         //     // looks for choices from this entity
