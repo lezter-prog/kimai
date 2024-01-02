@@ -12,7 +12,7 @@ namespace App\Form\Toolbar;
 use App\Entity\Activity;
 use App\Entity\Customer;
 use App\Entity\Project;
-use App\Form\Type\ActivityType;
+use App\Form\Type\ActivitySelectionType;
 use App\Form\Type\BillableSearchType;
 use App\Form\Type\CustomerType;
 use App\Form\Type\DateRangeType;
@@ -260,7 +260,7 @@ trait ToolbarFormTrait
         }
 
         // just a fake field for having this field at the right position in the frontend
-        $builder->add($name, ActivityType::class, array_merge($activityOptions, [
+        $builder->add($name, ActivitySelectionType::class, array_merge($activityOptions, [
             'choices' => [],
         ]));
 
@@ -269,7 +269,7 @@ trait ToolbarFormTrait
             function (FormEvent $event) use ($name, $multiProject, $activityOptions) {
                 /** @var array<string, mixed> $data */
                 $data = $event->getData();
-                $event->getForm()->add($name, ActivityType::class, array_merge($activityOptions, [
+                $event->getForm()->add($name, ActivitySelectionType::class, array_merge($activityOptions, [
                     'query_builder' => function (ActivityRepository $repo) use ($name, $data, $multiProject) {
                         $query = new ActivityFormTypeQuery();
 
