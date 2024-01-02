@@ -16,7 +16,7 @@ use App\Model\QuickEntryWeek;
 use App\Repository\Query\TimesheetQuery;
 use App\Repository\TimesheetRepository;
 use App\Timesheet\TimesheetService;
-use App\Activity\ActivityService;
+use App\Repository\ActivityRepository;
 use App\Entity\Activity;
 use App\Form\API\ActivityApiEditForm;
 use App\Event\ActivityMetaDefinitionEvent;
@@ -33,7 +33,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('quick-entry')]
 final class QuickEntryController extends AbstractController
 {
-    public function __construct(private SystemConfiguration $configuration,private ActivityService $activityService, private TimesheetService $timesheetService, private TimesheetRepository $repository)
+    public function __construct(private SystemConfiguration $configuration,private ActivityRepository $activityRepo, private TimesheetService $timesheetService, private TimesheetRepository $repository)
     {
     }
 
@@ -215,18 +215,25 @@ final class QuickEntryController extends AbstractController
                         if ($duration === null || $timesheet->getEnd() === null) {
                             $deleteTimesheets[] = $timesheet;
                         } else {
-                            if($timesheet->getActivity() != null){
+                            if($timesheet->getActivity()->getId() != null){
                                 $activity = $timesheet->getActivity();
                                 if($activity->getName() != $tmpModel->getActivity()){
                                     $activity->setName($tmpModel->getActivity());
-                                    $this->activityService->updateActivity($activity);
+                                    $this->activityRepo->saveActivity($activity);
                                 }
                             }else{
-                                $activity = new Activity();
-                                $activity->setProject($tmpModel->getProject());
-                                $activity->setName($tmpModel->getActivity());
-                                $this->activityService->saveNewActivity($activity);
-                                $timesheet->setActivity($activity);
+                                if($tmpModel->getActivity()!=null){
+                                    $activity = new Activity();
+                                    $activity->setProject($tmpModel->getProject());
+                                    $activity->setName($tmpModel->getActivity());
+                                    $activity =$this->activityRepo->findBy(["name"=>$tmpModel->getActivity()]);
+                                    if($activity->getId() !=null){
+                                        dd($activity);
+                                    }
+                                    $this->activityRepo->saveActivity($activity);
+                                    $timesheet->setActivity($activity);
+                                }
+                                
                             }
                             
 
@@ -237,7 +244,11 @@ final class QuickEntryController extends AbstractController
                             $activity = new Activity();
                             $activity->setProject($tmpModel->getProject());
                             $activity->setName($tmpModel->getActivity());
-                            $this->activityService->saveNewActivity($activity);
+                            $existing =$this->activityRepo->findBy(["name"=>$tmpModel->getActivity()]);
+                            if(!empty($existing)){
+                                $activity = $existing[0];
+                            }
+                            $this->activityRepo->saveActivity($activity);
                             $timesheet->setActivity($activity);
                             $saveTimesheets[] = $timesheet;
                         }
@@ -253,7 +264,7 @@ final class QuickEntryController extends AbstractController
                 }
 
                 if (\count($saveTimesheets) > 0) {
-                    // $this->activityService->updateMultipleActivities($saveActivities);
+                    // $this->activityRepo->updateMultipleActivities($saveActivities);
                     $this->timesheetService->updateMultipleTimesheets($saveTimesheets);
                     $saved = true;
                 }
