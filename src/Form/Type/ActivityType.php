@@ -101,27 +101,27 @@ final class ActivityType extends AbstractType
 
         $resolver->setDefault('query_builder', function (Options $options) {
             
-            // return function (EntityRepository $er) use ($options) {
-            //     $qb = $er->createQueryBuilder('a')
-            //     ->where('a.id = ?1')
-            //     ->andWhere('a.project = ?2')
-            //     ->setParameter(1, $options['activity_id'])
-            //     ->setParameter(2, $options['project_id']);
+            return function (EntityRepository $er) use ($options) {
+                $qb = $er->createQueryBuilder('a')
+                ->where('a.id = ?1')
+                ->andWhere('a.project = ?2')
+                ->setParameter(1, $options['activity_id'])
+                ->setParameter(2, $options['project_id']);
 
             //    return $qb;
-                $query = new ActivityFormTypeQuery($options['activities'], $options['projects']);
+            //     $query = new ActivityFormTypeQuery($options['activities'], $options['projects']);
 
-                if (true === $options['query_builder_for_user']) {
-                    $query->setUser($options['user']);
-                }
+            //     if (true === $options['query_builder_for_user']) {
+            //         $query->setUser($options['user']);
+            //     }
 
-                if (null !== $options['ignore_activity']) {
-                    $query->setActivityToIgnore($options['ignore_activity']);
-                }
-                $activity =  ($options['activities'] == null ? [] : $options['activities']);
+            //     if (null !== $options['ignore_activity']) {
+            //         $query->setActivityToIgnore($options['ignore_activity']);
+            //     }
+            //     $activity =  ($options['activities'] == null ? [] : $options['activities']);
 
-                return $repo->findOneBy($activity);
-            // };
+            //     return $repo->findOneBy($activity);
+            };
         });
     }
 
