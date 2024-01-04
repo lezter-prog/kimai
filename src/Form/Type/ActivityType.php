@@ -89,6 +89,7 @@ final class ActivityType extends AbstractType
             // @var Activity|null
             'ignore_activity' => null,
             'allow_create' => false,
+            'attr' => array('style' => 'width: 180px')
         ]);
 
         $resolver->setDefault('api_data', function (Options $options) {
