@@ -86,7 +86,7 @@ final class ProjectType extends AbstractType
             'project_date_start' => null,
             // @var DateTime|null
             'project_date_end' => null,
-            'attr' => array('style' => 'width: 180px')
+            'attr' => array('style' => 'width: 120px')
         ]);
 
         $resolver->setDefault('query_builder', function (Options $options) {

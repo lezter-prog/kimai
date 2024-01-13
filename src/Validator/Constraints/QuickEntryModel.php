@@ -15,7 +15,9 @@ final class QuickEntryModel extends Constraint
 {
     public const ACTIVITY_REQUIRED = 'quick-entry-model-01';
     public const PROJECT_REQUIRED = 'quick-entry-model-02';
+    public const DESCRIPTION_REQUIRED = 'quick-entry-model-03';
 
-    public string $messageActivityRequired = 'An activity needs to be selected.';
+    public string $messageActivityRequired = 'An activity is required field.';
     public string $messageProjectRequired = 'A project needs to be selected.';
+    public string $messageDescriptionRequired = 'A Description is required field.';
 }

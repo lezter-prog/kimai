@@ -27,18 +27,18 @@ class QuickEntryWeek
     {
     }
 
-    public function addRow(?User $user = null, ?Project $project = null, ?string $activity = null,?string $activity_id = null): QuickEntryModel
+    public function addRow(?User $user = null, ?Project $project = null, ?string $activity = null,?string $activity_id = null,?string $description = null): QuickEntryModel
     {
-        $model = $this->createRow($user, $project, $activity, $activity_id);
+        $model = $this->createRow($user, $project, $activity, $activity_id, $description);
 
         $this->rows[] = $model;
 
         return $model;
     }
 
-    public function createRow(?User $user = null, ?Project $project = null, ?string $activity = null, ?string $activity_id =null): QuickEntryModel
+    public function createRow(?User $user = null, ?Project $project = null, ?string $activity = null, ?string $activity_id =null,?string $description = null): QuickEntryModel
     {
-        return new QuickEntryModel($user, $project, $activity, $activity_id);
+        return new QuickEntryModel($user, $project, $activity, $activity_id, $description);
     }
 
     public function getDate(): \DateTime
