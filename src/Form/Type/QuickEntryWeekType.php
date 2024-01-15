@@ -14,6 +14,7 @@ use App\Model\QuickEntryModel;
 use App\Validator\Constraints\QuickEntryTimesheet;
 use App\Entity\Activity;
 use App\Repository\ActivityRepository;
+use App\Form\Type\DescriptionType;
 use Doctrine\ORM\EntityManagerInterface;
 use DateTime;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -76,6 +77,13 @@ final class QuickEntryWeekType extends AbstractType
 
         $builder->add('activity', ActivityType::class, $activityOptions);
         $builder->add('activity_id', TextType::class, $activityOptions);
+        $descriptionOptions = [
+            'label' => false,
+            'required' => false,
+            'attr' => array('style' => 'width: 180px')
+        ];
+        
+        $builder->add('description', TextType::class, $descriptionOptions);
         // $builder->add('activity', EntityType::class, [
         //     // looks for choices from this entity
         //     'class' => Activity::class,
@@ -163,8 +171,9 @@ final class QuickEntryWeekType extends AbstractType
                 $project = $transformValue->getProject();
                 $activity = $transformValue->getActivity();
                 $activityId =  $transformValue->getActivityId();
+                $description =  $transformValue->getDescription();
                 $activityVal =$this->activityRepository->find(intval($activityId));
-                // $activity =$transformValue->setActivity( $activityVal->getName());
+               
 
                 // this case needs to be handled by the validator
                 if ($project === null || $activity === null) {
@@ -179,6 +188,7 @@ final class QuickEntryWeekType extends AbstractType
                     $timesheet->setUser($user);
                     $timesheet->setProject($project);
                     $timesheet->setActivity($activityVal);
+                    $timesheet->setDescription($description);
                 }
                 
                 return $transformValue;
@@ -225,6 +235,7 @@ final class QuickEntryWeekType extends AbstractType
                 $activity = $data->getActivity();
                 $activityVal =$this->activityRepository->find(intval($activity_id));
                 $activity = $data->getActivity();
+                $description = $data->getDescription();
                 foreach ($newRecords as $record) {
                     if ($user !== null) {
                         $record->setUser($user);
@@ -237,6 +248,10 @@ final class QuickEntryWeekType extends AbstractType
                     // }
                     if($activityVal !==null){
                         $record->setActivity($activityVal);
+                    }
+
+                    if($description !== null){
+                        $record->setDescription($description);
                     }
                 }
             }

@@ -95,7 +95,8 @@ final class QuickEntryController extends AbstractController
                     'days' => $week,
                     'project' => $timesheet->getProject(),
                     'activity' => $timesheet->getActivity(),
-                    'activity_id'=>$timesheet->getActivity()->getId()
+                    'activity_id'=>$timesheet->getActivity()->getId(),
+                    'description'=>$timesheet->getDescription(),
                 ];
             }
 
@@ -128,7 +129,9 @@ final class QuickEntryController extends AbstractController
                 'days' => $week,
                 'project' => $timesheet->getProject(),
                 'activity' => $timesheet->getActivity(),
-                'activity_id'=>$timesheet->getActivity()->getId()
+                'activity_id'=>$timesheet->getActivity()->getId(),
+                'description'=>$timesheet->getDescription(),
+
             ];
         }
 
@@ -141,7 +144,7 @@ final class QuickEntryController extends AbstractController
 
         foreach ($rows as $id => $row) {
             
-            $model = $formModel->addRow($user, $row['project'],$row['activity']->getName(),$row['activity_id']);
+            $model = $formModel->addRow($user, $row['project'],$row['activity']->getName(),$row['activity_id'],$row['description']);
            
             foreach ($row['days'] as $dayId => $day) {
                 if (!\array_key_exists('entry', $day)) {
@@ -149,6 +152,7 @@ final class QuickEntryController extends AbstractController
                     $tmp = $this->timesheetService->createNewTimesheet($user);
                     $tmp->setProject($row['project']);
                     $tmp->setActivity($row['activity']);
+                    $tmp->setDescription($row['description']);
                     $tmp->setBegin(clone $day['day']);
                     $tmp->getBegin()->setTime($defaultHour, $defaultMinute, 0, 0);
                     $this->timesheetService->prepareNewTimesheet($tmp);

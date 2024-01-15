@@ -116,7 +116,7 @@ class TimesheetNewForm extends AbstractType
             // 'allow_create' => $allowCreate && $options['create_activity'],
         ]);
 
-        $descriptionOptions = ['required' => false];
+        $descriptionOptions = ['required' => true];
         
         $builder->add('description', DescriptionType::class, $descriptionOptions);
         $builder->add('tags', TagsType::class, ['required' => false]);

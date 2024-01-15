@@ -50,13 +50,16 @@ final class QuickEntryForm extends AbstractType
                     $project = $row->getProject();
                     $activity = $row->getActivity();
                     $activity_id =  $row->getActivityId();
+                    $description =  $row->getDescription();
                     $activityVal =$this->activityRepository->find(intval($activity_id));
+                    
                     if ($project === null || $activity === null) {
                         continue;
                     }
                     foreach ($row->getTimesheets() as $timesheet) {
                         $timesheet->setProject($project);
                         $timesheet->setActivity($activityVal);
+                        $timesheet->setDescription($description);
                     }
                 }
 
